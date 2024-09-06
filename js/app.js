@@ -1,94 +1,75 @@
-// Initialize Firebase
+// Your Firebase configuration
 const firebaseConfig = {
-    apiKey: "AIzaSyAcyNJq5x-HRsaBewFcfe0cix96fEgDcfY",
-    authDomain: "goanonymous-8126e.firebaseapp.com",
-    projectId: "goanonymous-8126e",
-    storageBucket: "goanonymous-8126e.appspot.com",
-    messagingSenderId: "334767869045",
-    appId: "1:334767869045:web:cb64e9d39c577df87fbc3c",
-    measurementId: "G-WLEFD6NJF2"
-  };
-  
-  // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  
-  // Handle form submission
-  document.getElementById('messageForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const messageInput = document.getElementById('messageInput').value;
-    if (messageInput.trim() === '') return;
-  
-    await db.collection('messages').add({
-      text: messageInput,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-      upvotes: 0
+  apiKey: "your-public-api-key",
+  authDomain: "your-project.firebaseapp.com",
+  projectId: "your-project-id",
+  storageBucket: "your-project.appspot.com",
+  messagingSenderId: "your-messaging-sender-id",
+  appId: "your-app-id",
+  measurementId: "your-measurement-id"
+};
+
+// Initialize Firebase
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import { getFirestore, collection, addDoc, onSnapshot, orderBy, query, doc, getDoc, updateDoc } from "firebase/firestore";
+
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const db = getFirestore(app);
+
+const messagesContainer = document.getElementById('messagesContainer');
+const messageForm = document.getElementById('messageForm');
+const messageInput = document.getElementById('messageInput');
+const toggleSort = document.getElementById('toggleSort');
+const toggleLabel = document.getElementById('toggleLabel');
+
+let sortByLatest = true;
+
+messageForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const messageText = messageInput.value;
+  if (messageText) {
+    await addDoc(collection(db, 'messages'), {
+      text: messageText,
+      upvotes: 0,
+      timestamp: new Date()
     });
-  
-    document.getElementById('messageInput').value = '';
-    loadMessages();
-  });
-  
-  // Load and display messages
-  async function loadMessages() {
-    const messagesContainer = document.getElementById('messagesContainer');
-    messagesContainer.innerHTML = '';
-  
-    let q;
-    if (sortByLatest) {
-      q = db.collection('messages').orderBy('timestamp', 'desc').limit(50);
-    } else {
-      q = db.collection('messages').orderBy('upvotes', 'desc').limit(50);
-    }
-  
-    try {
-      const querySnapshot = await q.get();
-      querySnapshot.forEach((doc) => {
-        const messageData = doc.data();
-        const messageElement = document.createElement('div');
-        messageElement.classList.add('message');
-        messageElement.innerHTML = `
-          <p>${messageData.text}</p>
-          <span class="upvotes">${messageData.upvotes} Upvotes</span>
-          <button class="upvoteBtn" data-id="${doc.id}">Upvote</button>
-        `;
-        messagesContainer.appendChild(messageElement);
-      });
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-    }
+    messageInput.value = '';
   }
-  
-  // Handle upvote button clicks
-  document.getElementById('messagesContainer').addEventListener('click', async (e) => {
-    if (e.target.classList.contains('upvoteBtn')) {
-      const messageId = e.target.getAttribute('data-id');
-      const messageRef = db.collection('messages').doc(messageId);
-      try {
-        // Update the upvote count in Firestore
-        await messageRef.update({
-          upvotes: firebase.firestore.FieldValue.increment(1)
-        });
-  
-        // Refresh the messages list to reflect the updated upvotes
-        loadMessages();
-      } catch (error) {
-        console.error('Error updating upvotes:', error);
-      }
-    }
-  });
-  
-  // Initialize sorting
-  let sortByLatest = true;
-  
-  document.addEventListener('DOMContentLoaded', () => {
-    loadMessages();
-    
-    // Toggle switch event listener
-    document.getElementById('toggleSort').addEventListener('change', () => {
-      sortByLatest = !sortByLatest;
-      document.getElementById('toggleLabel').textContent = `Sort by: ${sortByLatest ? 'Latest' : 'Most Upvoted'}`;
-      loadMessages();
+});
+
+const fetchMessages = async () => {
+  const q = query(collection(db, 'messages'), orderBy(sortByLatest ? 'timestamp' : 'upvotes', sortByLatest ? 'desc' : 'desc'));
+  onSnapshot(q, (snapshot) => {
+    messagesContainer.innerHTML = '';
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const messageDiv = document.createElement('div');
+      messageDiv.classList.add('message');
+      messageDiv.innerHTML = `
+        <p>${data.text}</p>
+        <button class="upvote" data-id="${doc.id}">Upvote (${data.upvotes})</button>
+      `;
+      messagesContainer.appendChild(messageDiv);
     });
   });
-  
+};
+
+fetchMessages();
+
+messagesContainer.addEventListener('click', async (e) => {
+  if (e.target.classList.contains('upvote')) {
+    const id = e.target.getAttribute('data-id');
+    const messageRef = doc(db, 'messages', id);
+    const docSnap = await getDoc(messageRef);
+    const newUpvotes = docSnap.data().upvotes + 1;
+    await updateDoc(messageRef, { upvotes: newUpvotes });
+  }
+});
+
+toggleSort.addEventListener('change', () => {
+  sortByLatest = !sortByLatest;
+  toggleLabel.textContent = `Sort by: ${sortByLatest ? 'Latest' : 'Most Upvoted'}`;
+  fetchMessages();
+});
