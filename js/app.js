@@ -1,4 +1,8 @@
-// Firebase Configuration (restricted key)
+// Import Firebase SDK modules directly
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAcyNJq5x-HRsaBewFcfe0cix96fEgDcfY",
   authDomain: "goanonymous-8126e.firebaseapp.com",
@@ -10,8 +14,8 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 // DOM Elements
 const messageForm = document.getElementById('messageForm');
@@ -28,10 +32,10 @@ messageForm.addEventListener('submit', async (e) => {
   if (messageText.trim() === '') return;
 
   // Add message to Firestore
-  await db.collection('messages').add({
+  await addDoc(collection(db, 'messages'), {
     text: messageText,
     upvotes: 0,
-    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    timestamp: new Date()
   });
 
   messageInput.value = '';
@@ -46,17 +50,15 @@ toggleSort.addEventListener('change', () => {
 
 // Fetch and display messages
 async function fetchMessages() {
-  let query = db.collection('messages');
-  if (sortByLatest) {
-    query = query.orderBy('timestamp', 'desc');
-  } else {
-    query = query.orderBy('upvotes', 'desc');
-  }
+  const messagesQuery = query(
+    collection(db, 'messages'),
+    orderBy(sortByLatest ? 'timestamp' : 'upvotes', 'desc')
+  );
 
-  const snapshot = await query.get();
+  const querySnapshot = await getDocs(messagesQuery);
   messagesContainer.innerHTML = ''; // Clear previous messages
 
-  snapshot.forEach(doc => {
+  querySnapshot.forEach((doc) => {
     const message = doc.data();
     const messageElement = document.createElement('div');
     messageElement.classList.add('message');
@@ -68,13 +70,13 @@ async function fetchMessages() {
   });
 
   // Attach upvote event listeners
-  document.querySelectorAll('.upvote-btn').forEach(btn => {
+  document.querySelectorAll('.upvote-btn').forEach((btn) => {
     btn.addEventListener('click', async (e) => {
       const id = e.target.getAttribute('data-id');
-      const messageRef = db.collection('messages').doc(id);
-      const message = await messageRef.get();
-      const newUpvotes = (message.data().upvotes || 0) + 1;
-      await messageRef.update({ upvotes: newUpvotes });
+      const messageRef = doc(db, 'messages', id);
+      const messageSnap = await getDoc(messageRef);
+      const newUpvotes = (messageSnap.data().upvotes || 0) + 1;
+      await updateDoc(messageRef, { upvotes: newUpvotes });
       fetchMessages(); // Refresh after upvoting
     });
   });
