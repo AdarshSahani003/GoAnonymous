@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anonymous Messages</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Anonymous Message Board</h1>
+
+    <!-- Toggle switch for sorting -->
+    <div class="toggle-container">
+      <label class="switch">
+        <input type="checkbox" id="toggleSort">
+        <span class="slider"></span>
+      </label>
+      <span id="toggleLabel">Sort by: Latest</span>
+    </div>
+
+    <!-- Area to display the messages -->
+    <div id="messagesContainer" class="messages-container"></div>
+
+    <!-- Form to submit a new message -->
+    <form id="messageForm" class="message-form">
+      <textarea id="messageInput" placeholder="Write your anonymous message..." required></textarea>
+      <button type="submit">Post Message</button>
+    </form>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js"></script>
+
+  <!-- Your app script -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
