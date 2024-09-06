@@ -1,6 +1,6 @@
 // Import Firebase SDK modules directly
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, updateDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -64,7 +64,7 @@ async function fetchMessages() {
     messageElement.classList.add('message');
     messageElement.innerHTML = `
       <p>${message.text}</p>
-      <button class="upvote-btn" data-id="${doc.id}">Upvote (${message.upvotes})</button>
+      <button class="upvote-btn" data-id="${doc.id}">👍 Upvote (${message.upvotes})</button>
     `;
     messagesContainer.appendChild(messageElement);
   });
